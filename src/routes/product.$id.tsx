@@ -4,7 +4,7 @@ import { Sparkles, ShieldCheck, MessageCircle, Heart } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { getProduct, PRODUCTS } from "@/lib/sample-data";
+import { getProduct, PRODUCTS, type Product } from "@/lib/sample-data";
 import { ProductCard } from "@/components/product-card";
 
 export const Route = createFileRoute("/product/$id")({
@@ -35,7 +35,7 @@ export const Route = createFileRoute("/product/$id")({
 });
 
 function ProductPage() {
-  const { product } = Route.useLoaderData();
+  const { product } = Route.useLoaderData() as { product: Product };
   const [active, setActive] = useState(0);
   const related = PRODUCTS.filter((p) => p.category === product.category && p.id !== product.id).slice(0, 4);
 
