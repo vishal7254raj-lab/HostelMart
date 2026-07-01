@@ -17,9 +17,7 @@ import { ThemeProvider } from "@/components/theme-provider";
 
 function NotFoundComponent() {
   return (
-    <>
-      <Navbar />
-      <main className="flex min-h-[70vh] items-center justify-center bg-background px-4">
+    <div className="flex min-h-[70vh] items-center justify-center bg-background px-4">
         <div className="max-w-md text-center">
           <p className="text-sm font-semibold text-primary">404</p>
           <h1 className="mt-2 text-3xl font-bold tracking-tight text-foreground">
@@ -43,9 +41,7 @@ function NotFoundComponent() {
             </Link>
           </div>
         </div>
-      </main>
-      <Footer />
-    </>
+      </div>
   );
 }
 
