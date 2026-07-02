@@ -19,12 +19,7 @@ export function Navbar() {
     <header className="sticky top-0 z-40 w-full border-b border-border bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/70">
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
         <Link to="/" className="flex items-center gap-2 font-bold text-lg">
-          <span className="grid h-9 w-9 place-items-center rounded-lg bg-primary text-primary-foreground">
-            <ShoppingBag className="h-5 w-5" />
-          </span>
-          <span className="text-foreground">
-            Hostel<span className="text-primary">Mart</span>
-          </span>
+          <img src="/logo.png.png" alt="HostelMart Logo" className="h-9 w-auto" />
         </Link>
 
         <nav className="hidden items-center gap-1 md:flex">
@@ -96,12 +91,7 @@ export function Navbar() {
 export function BrandMark() {
   return (
     <div className="flex items-center gap-2 font-bold">
-      <span className="grid h-8 w-8 place-items-center rounded-md bg-primary text-primary-foreground">
-        <Store className="h-4 w-4" />
-      </span>
-      <span>
-        Hostel<span className="text-primary">Mart</span>
-      </span>
+      <img src="/logo.png.png" alt="HostelMart Logo" className="h-8 w-auto" />
     </div>
   );
 }

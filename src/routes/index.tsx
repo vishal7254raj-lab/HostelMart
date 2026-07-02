@@ -42,8 +42,8 @@ function Index() {
               Built for hostel students
             </span>
             <h1 className="mt-5 text-4xl font-bold leading-tight tracking-tight text-foreground sm:text-5xl lg:text-6xl">
-              Buy. Sell. Save.{" "}
-              <span className="text-primary">Smarter.</span>
+              Buy Sell Save{" "}
+              <span className="text-primary">Smarter</span>
             </h1>
             <p className="mt-5 max-w-xl text-base text-muted-foreground sm:text-lg">
               Buy and sell books, notes, electronics, hostel essentials and more within
