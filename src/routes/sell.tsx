@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { Upload, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -10,6 +10,8 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import { CATEGORIES } from "@/lib/sample-data";
+import { useEffect } from "react";
+import { supabase } from "@/lib/supabase";
 
 export const Route = createFileRoute("/sell")({
   head: () => ({
@@ -22,6 +24,8 @@ export const Route = createFileRoute("/sell")({
 });
 
 function SellPage() {
+  const navigate = useNavigate();
+  const [checkingAuth, setCheckingAuth] = useState(true);
   const [images, setImages] = useState<string[]>([]);
 
   const onFiles = (files: FileList | null) => {
@@ -31,7 +35,34 @@ function SellPage() {
   };
 
   const removeAt = (i: number) => setImages((prev) => prev.filter((_, idx) => idx !== i));
+useEffect(() => {
+  checkUser();
+}, []);
 
+async function checkUser() {
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+
+  if (!session) {
+    navigate({
+      to: "/login",
+    });
+    return;
+  }
+
+  setCheckingAuth(false);
+}
+
+if (checkingAuth) {
+  return (
+    <div className="flex h-screen items-center justify-center">
+      <h2 className="text-lg font-semibold">
+        Checking authentication...
+      </h2>
+    </div>
+  );
+}
   return (
     <div className="mx-auto max-w-3xl px-4 py-10 sm:px-6 lg:px-8">
       <div>

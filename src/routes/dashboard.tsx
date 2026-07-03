@@ -1,9 +1,11 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { Pencil, Plus, Trash2, Package, Eye, IndianRupee } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { CURRENT_USER, PRODUCTS } from "@/lib/sample-data";
+import { useEffect, useState } from "react";
+import { supabase } from "@/lib/supabase";
 
 export const Route = createFileRoute("/dashboard")({
   head: () => ({
@@ -16,13 +18,56 @@ export const Route = createFileRoute("/dashboard")({
 });
 
 function Dashboard() {
+ const navigate = useNavigate();
+
+const [checkingAuth, setCheckingAuth] = useState(true);
+
+useEffect(() => {
+  checkUser();
+}, []);
+
+async function handleLogout() {
+  const { error } = await supabase.auth.signOut();
+
+  if (error) {
+    alert(error.message);
+    return;
+  }
+
+  navigate({
+    to: "/",
+  });
+}
+
+async function checkUser() {
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+
+  if (!session) {
+    navigate({
+      to: "/login",
+    });
+    return;
+  }
+
+  setCheckingAuth(false);
+}
   const myListings = PRODUCTS.slice(0, 4);
   const stats = [
     { label: "Active listings", value: myListings.length, icon: Package },
     { label: "Total views", value: 428, icon: Eye },
     { label: "Earnings", value: "₹4,120", icon: IndianRupee },
   ];
-
+if (checkingAuth) {
+  return (
+    <div className="flex h-screen items-center justify-center">
+      <h2 className="text-lg font-semibold">
+        Checking authentication...
+      </h2>
+    </div>
+  );
+}
   return (
     <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
       <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-4 sm:flex sm:justify-between">
@@ -119,7 +164,7 @@ function Dashboard() {
             </dl>
             <div className="mt-6 flex gap-2">
               <Button variant="outline">Edit profile</Button>
-              <Button variant="ghost" className="text-destructive hover:bg-destructive/10 hover:text-destructive">Sign out</Button>
+              <Button variant="ghost" className="text-destructive hover:bg-destructive/10 hover:text-destructive" onClick={handleLogout}> Sign out </Button>
             </div>
           </div>
         </TabsContent>

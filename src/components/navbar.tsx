@@ -1,8 +1,10 @@
-import { Link } from "@tanstack/react-router";
+import { Link, useNavigate } from "@tanstack/react-router";
 import { Menu, Moon, ShoppingBag, Store, Sun, X } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { useTheme } from "@/components/theme-provider";
+import { useEffect } from "react";
+import { supabase } from "@/lib/supabase";
 
 const nav = [
   { to: "/", label: "Home" },
@@ -12,8 +14,37 @@ const nav = [
 ];
 
 export function Navbar() {
+  async function handleLogout() {
+  await supabase.auth.signOut();
+
+  navigate({
+    to: "/",
+  });
+}
   const [open, setOpen] = useState(false);
   const { theme, toggle } = useTheme();
+  const navigate = useNavigate();
+
+const [loggedIn, setLoggedIn] = useState(false);
+useEffect(() => {
+  checkUser();
+
+  const {
+    data: { subscription },
+  } = supabase.auth.onAuthStateChange((_event, session) => {
+    setLoggedIn(!!session);
+  });
+
+  return () => subscription.unsubscribe();
+}, []);
+
+async function checkUser() {
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+
+  setLoggedIn(!!session);
+}
 
   return (
     <header className="sticky top-0 z-40 w-full border-b border-border bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/70">
@@ -40,14 +71,23 @@ export function Navbar() {
           <Button variant="ghost" size="icon" aria-label="Toggle theme" onClick={toggle}>
             {theme === "dark" ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
           </Button>
-          <div className="hidden items-center gap-2 md:flex">
-            <Button variant="ghost" asChild>
-              <Link to="/login">Login</Link>
-            </Button>
-            <Button asChild>
-              <Link to="/signup">Sign Up</Link>
-            </Button>
-          </div>
+   <div className="hidden items-center gap-2 md:flex">
+  {loggedIn ? (
+    <Button variant="destructive" onClick={handleLogout}>
+      Logout
+    </Button>
+  ) : (
+    <>
+      <Button variant="ghost" asChild>
+        <Link to="/login">Login</Link>
+      </Button>
+
+      <Button asChild>
+        <Link to="/signup">Sign Up</Link>
+      </Button>
+    </>
+  )}
+</div>
           <Button
             variant="ghost"
             size="icon"
@@ -74,13 +114,33 @@ export function Navbar() {
               </Link>
             ))}
             <div className="mt-2 flex gap-2">
-              <Button variant="outline" className="flex-1" asChild>
-                <Link to="/login" onClick={() => setOpen(false)}>Login</Link>
-              </Button>
-              <Button className="flex-1" asChild>
-                <Link to="/signup" onClick={() => setOpen(false)}>Sign Up</Link>
-              </Button>
-            </div>
+  {loggedIn ? (
+    <Button
+      className="flex-1"
+      variant="destructive"
+      onClick={() => {
+        handleLogout();
+        setOpen(false);
+      }}
+    >
+      Logout
+    </Button>
+  ) : (
+    <>
+      <Button variant="outline" className="flex-1" asChild>
+        <Link to="/login" onClick={() => setOpen(false)}>
+          Login
+        </Link>
+      </Button>
+
+      <Button className="flex-1" asChild>
+        <Link to="/signup" onClick={() => setOpen(false)}>
+          Sign Up
+        </Link>
+      </Button>
+    </>
+  )}
+</div>
           </nav>
         </div>
       )}
