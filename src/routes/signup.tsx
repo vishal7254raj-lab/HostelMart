@@ -59,10 +59,10 @@ function SignupPage() {
 
     setLoading(true);
 
-    const { error } = await supabase.auth.signUp({
-      email,
-      password,
-    });
+   const { data, error } = await supabase.auth.signUp({
+  email,
+  password,
+});
 
     setLoading(false);
 
@@ -70,6 +70,25 @@ function SignupPage() {
       setError(error.message);
       return;
     }
+    if (data.user) {
+  const { error: profileError } = await supabase
+    .from("profiles")
+    .insert([
+      {
+        id: data.user.id,
+        name: name,
+        email: email,
+        mobile: mobile,
+        year: year,
+        hostel: hostel,
+      },
+    ]);
+
+  if (profileError) {
+    setError(profileError.message);
+    return;
+  }
+}
 
     alert("Account created successfully!");
 

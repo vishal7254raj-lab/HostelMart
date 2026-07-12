@@ -1,10 +1,11 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { Search, SlidersHorizontal } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { ProductCard } from "@/components/product-card";
-import { CATEGORIES, PRODUCTS } from "@/lib/sample-data";
+import { CATEGORIES } from "@/lib/sample-data";
+import { supabase } from "@/lib/supabase";
 
 export const Route = createFileRoute("/buy")({
   head: () => ({
@@ -25,19 +26,52 @@ export const Route = createFileRoute("/buy")({
 function BuyPage() {
   const [q, setQ] = useState("");
   const [cat, setCat] = useState<string>("all");
+  const [products, setProducts] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+   useEffect(() => {
+    fetchProducts();
+  }, []);
 
+  async function fetchProducts() {
+    setLoading(true);
+
+    const { data, error } = await supabase
+      .from("products")
+      .select("*")
+      .order("created_at", { ascending: false });
+
+    if (error) {
+      alert(error.message);
+      setLoading(false);
+      return;
+    }
+    console.log(data);
+    setProducts(data || []);
+    setLoading(false);
+  }
   const filtered = useMemo(() => {
-    return PRODUCTS.filter((p) => {
-      const matchCat = cat === "all" || p.category === cat;
-      const query = q.trim().toLowerCase();
-      const matchQ =
-        !query ||
-        p.name.toLowerCase().includes(query) ||
-        p.brand.toLowerCase().includes(query);
-      return matchCat && matchQ;
-    });
-  }, [q, cat]);
+  return products.filter((p) => {
+    const matchCat = cat === "all" || p.category === cat;
+    const query = q.trim().toLowerCase();
 
+   const matchQ =
+  !query ||
+  p.name?.toLowerCase().includes(query) ||
+  p.brand?.toLowerCase().includes(query);
+    return matchCat && matchQ;
+  });
+  console.log("ALL PRODUCTS:", products);
+console.log("FILTERED PRODUCTS:", filtered);
+}, [products, q, cat]);
+  if (loading) {
+  return (
+    <div className="flex h-screen items-center justify-center">
+      <h2 className="text-lg font-semibold">
+        Loading products...
+      </h2>
+    </div>
+  );
+}
   return (
     <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
       <div className="flex flex-col gap-2">

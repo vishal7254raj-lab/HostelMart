@@ -3,7 +3,7 @@ import { Pencil, Plus, Trash2, Package, Eye, IndianRupee } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { CURRENT_USER, PRODUCTS } from "@/lib/sample-data";
+
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
 
@@ -21,7 +21,10 @@ function Dashboard() {
  const navigate = useNavigate();
 
 const [checkingAuth, setCheckingAuth] = useState(true);
+const [profile, setProfile] = useState<any>(null);
 
+const [myListings, setMyListings] = useState<any[]>([]);
+const [loadingListings, setLoadingListings] = useState(true);
 useEffect(() => {
   checkUser();
 }, []);
@@ -51,9 +54,68 @@ async function checkUser() {
     return;
   }
 
+  const { data, error } = await supabase
+    .from("profiles")
+    .select("*")
+    .eq("id", session.user.id)
+    .single();
+
+  if (error) {
+    alert(error.message);
+    setCheckingAuth(false);
+    return;
+  }
+
+  setProfile(data);
+
+  await fetchMyListings(session.user.id);
+
   setCheckingAuth(false);
 }
-  const myListings = PRODUCTS.slice(0, 4);
+async function fetchMyListings(userId: string) {
+  setLoadingListings(true);
+  const { data, error } = await supabase
+    .from("products")
+    .select("*")
+    .eq("seller_id", userId)
+    .order("created_at", { ascending: false });
+
+  if (error) {
+    console.error(error);
+    alert(error.message);
+    setLoadingListings(false);
+    return;
+  }
+
+  setMyListings(data || []);
+  setLoadingListings(false);
+}
+async function handleDelete(productId: string) {
+  const confirmDelete = window.confirm(
+    "Are you sure you want to delete this listing?"
+  );
+
+  if (!confirmDelete) return;
+
+  const { error } = await supabase
+    .from("products")
+    .delete()
+    .eq("id", productId);
+
+  if (error) {
+    alert(error.message);
+    return;
+  }
+
+  // Remove from UI immediately
+  setMyListings((prev) => prev.filter((item) => item.id !== productId));
+
+  alert("Listing deleted successfully!");
+}
+
+  
+
+
   const stats = [
     { label: "Active listings", value: myListings.length, icon: Package },
     { label: "Total views", value: 428, icon: Eye },
@@ -68,12 +130,22 @@ if (checkingAuth) {
     </div>
   );
 }
+
+if (loadingListings) {
+  return (
+    <div className="flex h-screen items-center justify-center">
+      <h2 className="text-lg font-semibold">
+        Loading your listings...
+      </h2>
+    </div>
+  );
+}
   return (
     <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
       <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-4 sm:flex sm:justify-between">
         <div className="min-w-0">
           <h1 className="truncate text-2xl font-bold text-foreground sm:text-3xl">
-            Welcome back, {CURRENT_USER.name.split(" ")[0]} 👋
+             Welcome back, {profile?.name?.split(" ")[0]} 👋
           </h1>
           <p className="mt-1 text-sm text-muted-foreground">
             Here's what's happening with your marketplace activity.
@@ -114,9 +186,19 @@ if (checkingAuth) {
           ) : (
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-2">
               {myListings.map((p) => (
-                <div key={p.id} className="flex gap-4 rounded-xl border border-border bg-card p-4 shadow-sm">
-                  <img src={p.images[0]} alt="" className="h-24 w-24 shrink-0 rounded-lg object-cover" />
-                  <div className="flex min-w-0 flex-1 flex-col">
+               <div key={p.id} className="flex gap-4 rounded-xl border border-border bg-card p-4 shadow-sm">
+
+  <img
+    src={
+      p.image_urls?.length > 0
+        ? p.image_urls[0]
+        : "https://placehold.co/96x96?text=No+Image"
+    }
+    alt={p.name}
+    className="h-24 w-24 shrink-0 rounded-lg object-cover"
+  />
+
+  <div className="flex min-w-0 flex-1 flex-col">
                     <div className="flex items-start justify-between gap-2">
                       <div className="min-w-0">
                         <p className="truncate text-xs text-muted-foreground">{p.brand}</p>
@@ -126,9 +208,17 @@ if (checkingAuth) {
                     </div>
                     <div className="mt-1 text-lg font-bold text-accent">₹{p.price.toLocaleString("en-IN")}</div>
                     <div className="mt-auto flex gap-2 pt-2">
-                      <Button size="sm" variant="outline" className="h-8"><Pencil className="mr-1 h-3.5 w-3.5" /> Edit</Button>
-                      <Button size="sm" variant="ghost" className="h-8 text-destructive hover:bg-destructive/10 hover:text-destructive">
-                        <Trash2 className="mr-1 h-3.5 w-3.5" /> Delete
+                      <Button asChild size="sm" variant="outline" className="h-8">
+                         <Link to="/edit-product/$productId" params={{ productId: p.id }}>
+                           <Pencil className="mr-1 h-3.5 w-3.5" />
+                             Edit
+                         </Link>
+                      </Button>
+                      
+                      <Button size="sm" variant="ghost" className="h-8 text-destructive hover:bg-destructive/10 hover:text-destructive"
+                        onClick={() => handleDelete(p.id)}>
+                         <Trash2 className="mr-1 h-3.5 w-3.5" />
+                           Delete
                       </Button>
                     </div>
                   </div>
@@ -142,19 +232,22 @@ if (checkingAuth) {
           <div className="max-w-2xl rounded-xl border border-border bg-card p-6 shadow-sm">
             <div className="flex items-center gap-4">
               <div className="grid h-16 w-16 place-items-center rounded-full bg-primary/10 text-primary text-xl font-bold">
-                {CURRENT_USER.name.split(" ").map((n) => n[0]).join("")}
+                {profile?.name?.split(" ").map((n: string) => n[0]).join("")}
               </div>
               <div>
-                <h2 className="text-lg font-semibold text-foreground">{CURRENT_USER.name}</h2>
-                <p className="text-sm text-muted-foreground">{CURRENT_USER.year} · {CURRENT_USER.hostel}</p>
+                <h2 className="text-lg font-semibold text-foreground">{profile?.name}</h2>
+                <p className="text-sm text-muted-foreground">{profile?.year} · {profile?.hostel}</p>
               </div>
             </div>
             <dl className="mt-6 grid gap-4 sm:grid-cols-2">
               {[
-                ["Email", CURRENT_USER.email],
-                ["Mobile", CURRENT_USER.mobile],
-                ["Year", CURRENT_USER.year],
-                ["Hostel", CURRENT_USER.hostel],
+                
+                  ["Email", profile?.email],
+                  ["Mobile", profile?.mobile],
+                  ["Year", profile?.year],
+                  ["Hostel", profile?.hostel],
+                
+                
               ].map(([k, v]) => (
                 <div key={k} className="rounded-lg border border-border bg-background p-3">
                   <dt className="text-xs uppercase tracking-wide text-muted-foreground">{k}</dt>

@@ -26,15 +26,39 @@ export const Route = createFileRoute("/sell")({
 function SellPage() {
   const navigate = useNavigate();
   const [checkingAuth, setCheckingAuth] = useState(true);
-  const [images, setImages] = useState<string[]>([]);
+  const [images, setImages] = useState<File[]>([]);
+  const [imagePreviews, setImagePreviews] = useState<string[]>([]);
+  const [name, setName] = useState("");
+const [brand, setBrand] = useState("");
+const [category, setCategory] = useState("");
+const [condition, setCondition] = useState("");
+const [price, setPrice] = useState("");
+const [originalPrice, setOriginalPrice] = useState("");
+const [description, setDescription] = useState("");
+const [billAvailable, setBillAvailable] = useState(false);
 
-  const onFiles = (files: FileList | null) => {
-    if (!files) return;
-    const urls = Array.from(files).map((f) => URL.createObjectURL(f));
-    setImages((prev) => [...prev, ...urls].slice(0, 6));
-  };
+const [loading, setLoading] = useState(false);
+const [aiLoading, setAiLoading] = useState(false);
+const onFiles = (files: FileList | null) => {
+  if (!files) return;
 
-  const removeAt = (i: number) => setImages((prev) => prev.filter((_, idx) => idx !== i));
+  const selectedFiles = Array.from(files);
+
+  setImages((prev) => [...prev, ...selectedFiles].slice(0, 6));
+
+  const previews = selectedFiles.map((file) =>
+    URL.createObjectURL(file)
+  );
+
+  setImagePreviews((prev) => [...prev, ...previews].slice(0, 6));
+};
+const removeAt = (index: number) => {
+  setImages((prev) => prev.filter((_, i) => i !== index));
+
+  setImagePreviews((prev) =>
+    prev.filter((_, i) => i !== index)
+  );
+};
 useEffect(() => {
   checkUser();
 }, []);
@@ -53,7 +77,125 @@ async function checkUser() {
 
   setCheckingAuth(false);
 }
+async function uploadImages() {
+  const imageUrls: string[] = [];
 
+  for (const file of images) {
+    const fileName = `${Date.now()}-${Math.random()}-${file.name}`;
+
+    const { error } = await supabase.storage
+      .from("product-image")
+      .upload(fileName, file);
+
+    if (error) {
+      throw error;
+    }
+
+    const { data } = supabase.storage
+      .from("product-image")
+      .getPublicUrl(fileName);
+
+    imageUrls.push(data.publicUrl);
+  }
+
+  return imageUrls;
+}
+async function generateDescription() {
+  console.log("AI button clicked");
+
+  if (!name || !category || !condition) {
+    alert("Please fill Product Name, Category and Condition first.");
+    return;
+  }
+
+  setAiLoading(true);
+
+  try {
+    console.log("Calling Edge Function...");
+
+    const { data, error } = await supabase.functions.invoke(
+      "generate-description",
+      {
+        body: {
+          name,
+          brand,
+          category,
+          condition,
+          description,
+        },
+      }
+    );
+
+    console.log("Response:", data);
+    console.log("Error:", error);
+
+    if (error) throw error;
+
+    if (data?.description) {
+      setDescription(data.description);
+    } else {
+      alert("No description returned.");
+    }
+  } catch (err: any) {
+    console.error(err);
+    alert(err.message);
+  } finally {
+    setAiLoading(false);
+  }
+}
+async function handlePublish(e: React.FormEvent<HTMLFormElement>) {
+  e.preventDefault();
+
+  setLoading(true);
+
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+  console.log("Logged in user ID:", session?.user.id);
+
+  if (!session) {
+    alert("Please login first.");
+    setLoading(false);
+    return;
+  }
+   let imageUrls: string[] = [];
+
+try {
+  imageUrls = await uploadImages();
+} catch (error: any) {
+  alert(error.message);
+  setLoading(false);
+  return;
+}
+
+const { error } = await supabase
+  .from("products")
+  .insert({
+    seller_id: session.user.id,
+    name,
+    brand,
+    category,
+    condition,
+    price: Number(price),
+    original_price: originalPrice ? Number(originalPrice) : null,
+    description,
+    bill_available: billAvailable,
+    image_urls: imageUrls,
+  });
+
+  setLoading(false);
+
+  if (error) {
+    alert(error.message);
+    return;
+  }
+
+  alert("Product listed successfully!");
+
+  navigate({
+    to: "/dashboard",
+  });
+}
 if (checkingAuth) {
   return (
     <div className="flex h-screen items-center justify-center">
@@ -72,15 +214,15 @@ if (checkingAuth) {
         </p>
       </div>
 
-      <form
-        onSubmit={(e) => e.preventDefault()}
+     <form
+        onSubmit={handlePublish}
         className="mt-8 space-y-8 rounded-2xl border border-border bg-card p-6 shadow-sm sm:p-8"
       >
         {/* Photos */}
         <div>
           <Label className="text-sm font-semibold">Photos <span className="text-muted-foreground font-normal">(minimum 3)</span></Label>
           <div className="mt-3 grid grid-cols-3 gap-3 sm:grid-cols-4">
-            {images.map((src, i) => (
+            {imagePreviews.map((src, i) => (
               <div key={i} className="relative aspect-square overflow-hidden rounded-lg border border-border">
                 <img src={src} alt="" className="h-full w-full object-cover" />
                 <button
@@ -111,16 +253,40 @@ if (checkingAuth) {
 
         <div className="grid gap-5 sm:grid-cols-2">
           <div className="space-y-2">
-            <Label htmlFor="name">Product name</Label>
-            <Input id="name" placeholder="e.g. Casio FX-991EX Calculator" required />
+            <div className="flex items-center justify-between">
+  <Label htmlFor="desc">Description</Label>
+
+  <Button
+    type="button"
+    variant="outline"
+    size="sm"
+    onClick={generateDescription}
+    disabled={aiLoading}
+  >
+    {aiLoading ? "Generating..." : "✨ Generate with AI"}
+  </Button>
+</div>
+           <Input
+  id="name"
+  value={name}
+  onChange={(e) => setName(e.target.value)}
+  placeholder="e.g. Casio FX-991EX Calculator"
+  required
+/>
           </div>
           <div className="space-y-2">
             <Label htmlFor="brand">Brand</Label>
-            <Input id="brand" placeholder="e.g. Casio" required />
+           <Input
+  id="brand"
+  value={brand}
+  onChange={(e) => setBrand(e.target.value)}
+  placeholder="e.g. Casio"
+  required
+/>
           </div>
           <div className="space-y-2">
             <Label htmlFor="category">Category</Label>
-            <Select>
+            <Select value={category} onValueChange={setCategory}>
               <SelectTrigger id="category"><SelectValue placeholder="Select a category" /></SelectTrigger>
               <SelectContent>
                 {CATEGORIES.map((c) => (
@@ -131,7 +297,7 @@ if (checkingAuth) {
           </div>
           <div className="space-y-2">
             <Label htmlFor="condition">Condition</Label>
-            <Select>
+            <Select value={condition} onValueChange={setCondition}>
               <SelectTrigger id="condition"><SelectValue placeholder="Select condition" /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="like-new">Like New</SelectItem>
@@ -142,33 +308,58 @@ if (checkingAuth) {
           </div>
           <div className="space-y-2">
             <Label htmlFor="price">Selling price (₹)</Label>
-            <Input id="price" type="number" min="0" placeholder="750" required />
+           <Input
+  id="price"
+  type="number"
+  min="0"
+  value={price}
+  onChange={(e) => setPrice(e.target.value)}
+  placeholder="750"
+  required
+/>
           </div>
           <div className="space-y-2">
             <Label htmlFor="original">Original price (optional)</Label>
-            <Input id="original" type="number" min="0" placeholder="1295" />
+            <Input
+  id="original"
+  type="number"
+  min="0"
+  value={originalPrice}
+  onChange={(e) => setOriginalPrice(e.target.value)}
+  placeholder="1295"
+/>
           </div>
         </div>
 
         <div className="space-y-2">
           <Label htmlFor="desc">Description</Label>
           <Textarea
-            id="desc"
-            rows={5}
-            placeholder="Tell buyers about the item — how old is it, why you're selling, any defects…"
-          />
+  id="desc"
+  rows={5}
+  value={description}
+  onChange={(e) => setDescription(e.target.value)}
+  placeholder="Tell buyers about the item — how old is it, why you're selling, any defects…"
+/>
         </div>
 
         <div className="flex items-center gap-2">
-          <Checkbox id="bill" />
+         <Checkbox
+  id="bill"
+  checked={billAvailable}
+  onCheckedChange={(checked) => setBillAvailable(checked === true)}
+/>
           <Label htmlFor="bill" className="text-sm font-normal">Original bill / invoice available</Label>
         </div>
 
         <div className="flex flex-col gap-3 border-t border-border pt-6 sm:flex-row sm:justify-end">
           <Button type="button" variant="outline">Save as draft</Button>
-          <Button type="submit" className="bg-accent text-accent-foreground hover:bg-accent/90">
-            Publish listing
-          </Button>
+          <Button
+  type="submit"
+  disabled={loading}
+  className="bg-accent text-accent-foreground hover:bg-accent/90"
+>
+  {loading ? "Publishing..." : "Publish listing"}
+</Button>
         </div>
       </form>
     </div>

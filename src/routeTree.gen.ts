@@ -15,7 +15,9 @@ import { Route as LoginRouteImport } from './routes/login'
 import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as BuyRouteImport } from './routes/buy'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as ProductIdRouteImport } from './routes/product.$id'
+import { Route as ProductProductIdRouteImport } from './routes/product.$productId'
+import { Route as EditProductProductIdRouteImport } from './routes/edit-product/$productId'
+import { Route as ChatConversationIdRouteImport } from './routes/chat.$conversationId'
 
 const SignupRoute = SignupRouteImport.update({
   id: '/signup',
@@ -47,9 +49,19 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ProductIdRoute = ProductIdRouteImport.update({
-  id: '/product/$id',
-  path: '/product/$id',
+const ProductProductIdRoute = ProductProductIdRouteImport.update({
+  id: '/product/$productId',
+  path: '/product/$productId',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const EditProductProductIdRoute = EditProductProductIdRouteImport.update({
+  id: '/edit-product/$productId',
+  path: '/edit-product/$productId',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ChatConversationIdRoute = ChatConversationIdRouteImport.update({
+  id: '/chat/$conversationId',
+  path: '/chat/$conversationId',
   getParentRoute: () => rootRouteImport,
 } as any)
 
@@ -60,7 +72,9 @@ export interface FileRoutesByFullPath {
   '/login': typeof LoginRoute
   '/sell': typeof SellRoute
   '/signup': typeof SignupRoute
-  '/product/$id': typeof ProductIdRoute
+  '/chat/$conversationId': typeof ChatConversationIdRoute
+  '/edit-product/$productId': typeof EditProductProductIdRoute
+  '/product/$productId': typeof ProductProductIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -69,7 +83,9 @@ export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/sell': typeof SellRoute
   '/signup': typeof SignupRoute
-  '/product/$id': typeof ProductIdRoute
+  '/chat/$conversationId': typeof ChatConversationIdRoute
+  '/edit-product/$productId': typeof EditProductProductIdRoute
+  '/product/$productId': typeof ProductProductIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -79,7 +95,9 @@ export interface FileRoutesById {
   '/login': typeof LoginRoute
   '/sell': typeof SellRoute
   '/signup': typeof SignupRoute
-  '/product/$id': typeof ProductIdRoute
+  '/chat/$conversationId': typeof ChatConversationIdRoute
+  '/edit-product/$productId': typeof EditProductProductIdRoute
+  '/product/$productId': typeof ProductProductIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -90,7 +108,9 @@ export interface FileRouteTypes {
     | '/login'
     | '/sell'
     | '/signup'
-    | '/product/$id'
+    | '/chat/$conversationId'
+    | '/edit-product/$productId'
+    | '/product/$productId'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -99,7 +119,9 @@ export interface FileRouteTypes {
     | '/login'
     | '/sell'
     | '/signup'
-    | '/product/$id'
+    | '/chat/$conversationId'
+    | '/edit-product/$productId'
+    | '/product/$productId'
   id:
     | '__root__'
     | '/'
@@ -108,7 +130,9 @@ export interface FileRouteTypes {
     | '/login'
     | '/sell'
     | '/signup'
-    | '/product/$id'
+    | '/chat/$conversationId'
+    | '/edit-product/$productId'
+    | '/product/$productId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -118,7 +142,9 @@ export interface RootRouteChildren {
   LoginRoute: typeof LoginRoute
   SellRoute: typeof SellRoute
   SignupRoute: typeof SignupRoute
-  ProductIdRoute: typeof ProductIdRoute
+  ChatConversationIdRoute: typeof ChatConversationIdRoute
+  EditProductProductIdRoute: typeof EditProductProductIdRoute
+  ProductProductIdRoute: typeof ProductProductIdRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -165,11 +191,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/product/$id': {
-      id: '/product/$id'
-      path: '/product/$id'
-      fullPath: '/product/$id'
-      preLoaderRoute: typeof ProductIdRouteImport
+    '/product/$productId': {
+      id: '/product/$productId'
+      path: '/product/$productId'
+      fullPath: '/product/$productId'
+      preLoaderRoute: typeof ProductProductIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/edit-product/$productId': {
+      id: '/edit-product/$productId'
+      path: '/edit-product/$productId'
+      fullPath: '/edit-product/$productId'
+      preLoaderRoute: typeof EditProductProductIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/chat/$conversationId': {
+      id: '/chat/$conversationId'
+      path: '/chat/$conversationId'
+      fullPath: '/chat/$conversationId'
+      preLoaderRoute: typeof ChatConversationIdRouteImport
       parentRoute: typeof rootRouteImport
     }
   }
@@ -182,7 +222,9 @@ const rootRouteChildren: RootRouteChildren = {
   LoginRoute: LoginRoute,
   SellRoute: SellRoute,
   SignupRoute: SignupRoute,
-  ProductIdRoute: ProductIdRoute,
+  ChatConversationIdRoute: ChatConversationIdRoute,
+  EditProductProductIdRoute: EditProductProductIdRoute,
+  ProductProductIdRoute: ProductProductIdRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
